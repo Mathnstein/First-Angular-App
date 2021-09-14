@@ -3,6 +3,7 @@ import { ActivatedRoute, Params, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { APIResponse, Game } from 'src/app/models';
 import { HttpService } from 'src/app/services/http.service';
+import { ResponseService } from 'src/app/services/response.service';
 
 @Component( {
   selector: 'app-home',
@@ -10,15 +11,20 @@ import { HttpService } from 'src/app/services/http.service';
   styleUrls: [ './home.component.scss' ]
 } )
 export class HomeComponent implements OnInit, OnDestroy {
+  public isMobile: boolean;
   public sort: string;
   public games: Array<Game>;
+  private respSub: Subscription;
   private routeSub: Subscription;
   private gameSub: Subscription;
 
 
-  constructor( private httpService: HttpService, private router: Router, private activatedRoute: ActivatedRoute ) { }
+  constructor( private httpService: HttpService, private router: Router, private activatedRoute: ActivatedRoute, private responseService: ResponseService ) { }
 
   ngOnInit(): void {
+    this.onResize();
+    this.responseService.checkWidth();
+
     this.routeSub = this.activatedRoute.params.subscribe( ( params: Params ) => {
       if ( params[ 'game-search' ] ) {
         this.searchGames( 'metacrit', params[ 'game-search' ] );
@@ -26,6 +32,12 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.searchGames( 'metacrit' );
       }
     } );
+  }
+
+  onResize() {
+    this.respSub = this.responseService.getMobileStatus().subscribe( ( isMobile ) => {
+      this.isMobile = isMobile;
+    } )
   }
 
   searchGames( sort: string, search?: string ) {
@@ -41,6 +53,10 @@ export class HomeComponent implements OnInit, OnDestroy {
 
 
   ngOnDestroy(): void {
+    if ( this.respSub ) {
+      this.respSub.unsubscribe();
+    }
+
     if ( this.gameSub ) {
       this.gameSub.unsubscribe();
     }

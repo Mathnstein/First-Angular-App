@@ -3,6 +3,7 @@ import { ActivatedRoute, Params } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Game } from 'src/app/models';
 import { HttpService } from 'src/app/services/http.service';
+import { ResponseService } from 'src/app/services/response.service';
 
 @Component( {
   selector: 'app-details',
@@ -13,15 +14,28 @@ export class DetailsComponent implements OnInit, OnDestroy {
   gameRating = 0;
   gameId: string;
   game: Game;
-  routeSub: Subscription;
-  gameSub: Subscription
+  isMobile: boolean;
 
-  constructor( private ActivatedRoute: ActivatedRoute, private httpService: HttpService ) { }
+  private respSub: Subscription;
+  private routeSub: Subscription;
+  private gameSub: Subscription;
+
+
+  constructor( private ActivatedRoute: ActivatedRoute, private httpService: HttpService, private responseService: ResponseService ) { }
 
   ngOnInit(): void {
+    this.onResize();
+    this.responseService.checkWidth();
+
     this.routeSub = this.ActivatedRoute.params.subscribe( ( params: Params ) => {
       this.gameId = params[ 'id' ];
       this.getGameDetails( this.gameId );
+    } )
+  }
+
+  onResize() {
+    this.respSub = this.responseService.getMobileStatus().subscribe( ( isMobile ) => {
+      this.isMobile = isMobile
     } )
   }
 
@@ -48,6 +62,10 @@ export class DetailsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if ( this.respSub ) {
+      this.respSub.unsubscribe();
+    }
+
     if ( this.gameSub ) {
       this.gameSub.unsubscribe();
     }
